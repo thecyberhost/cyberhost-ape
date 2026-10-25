@@ -1,0 +1,28 @@
+# ---- CyberHost runtime data (never commit heavy binaries) ----
+/tools/
+/targets/
+/runtime/
+/dist/
+.cache/
+.cyberhost_history
+tools/installed.lock.json
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

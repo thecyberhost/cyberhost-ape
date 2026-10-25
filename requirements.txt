@@ -1,0 +1,5 @@
+# CyberHost APE runtime dependencies (the only Python packages the launcher
+# itself needs; each bundled tool manages its own isolated environment).
+PyYAML>=6.0
+rich>=13.7
+prompt_toolkit>=3.0.43

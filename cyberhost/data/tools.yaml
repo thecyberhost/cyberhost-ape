@@ -1,0 +1,521 @@
+# CyberHost APE — tool manifest (single source of truth)
+#
+# Adding a tool = adding an entry here. No download URLs or versions are
+# hardcoded: `source` points at each tool's OFFICIAL upstream, and the resolver
+# (resolver.py) fetches the CURRENT latest release at build time and again on
+# every `install` / `update`. The `version` field is only a last-resort offline
+# snapshot filled in by the build; it is never authoritative.
+#
+# Fields:
+#   name        unique id (what `use`/`install`/`run` take)
+#   category    grouping for `list`
+#   description one line shown in `list` / `info`
+#   core        true  = bundled in the ZIP, works offline
+#               false = on-demand, fetched by `install <name>`
+#   optional    true  = heavy / occasional (implies not in core ZIP)
+#   platforms   windows | macos | linux
+#   install     archive | github_release | jar | pip | npm | script | docker | google
+#   source.type github | google | pypi | npm | url
+#   bin         executables the tool provides (for PATH + `run`)
+#   entry       jar filename / python module / console-script (for `run`)
+
+meta:
+  schema: 1
+  distribution: "CyberHost APE portable ZIP (Windows-first)"
+
+tools:
+  # ========================================================================
+  # Bundled runtimes (portable; every tool uses these, never the system's)
+  # ========================================================================
+  - name: jdk
+    category: runtime
+    description: "Portable Eclipse Temurin JDK 17 (LTS) — provides java + keytool"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: archive
+    source:
+      # Adoptium's official "latest GA" binary API always 302-redirects to the
+      # newest Temurin 17 JDK — no version is ever hardcoded.
+      type: url
+      url: "https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jdk/hotspot/normal/eclipse"
+    bin: [java, keytool, jarsigner]
+    homepage: https://adoptium.net
+
+  - name: python
+    category: runtime
+    description: "Portable, relocatable CPython 3.11 (python-build-standalone; has venv+pip)"
+    core: true
+    optional: false
+    platforms: [windows]
+    install: archive
+    source:
+      # python-build-standalone is a fully-featured, relocatable CPython (unlike
+      # the embeddable build it supports venv + pip, which the bundled Frida/
+      # objection tools need). Latest 3.11 install_only build, always resolved.
+      type: github
+      repo: astral-sh/python-build-standalone
+      asset_pattern: "cpython-3\\.11\\.[0-9]+\\+.*-x86_64-pc-windows-msvc-install_only\\.tar\\.gz$"
+    bin: [python]
+    homepage: https://github.com/astral-sh/python-build-standalone
+
+  # ========================================================================
+  # Device & runtime
+  # ========================================================================
+  - name: platform-tools
+    category: device
+    description: "Android platform-tools — adb, fastboot (bundled adb is first-class)"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: archive
+    source:
+      type: google
+      google_product: platform-tools
+    bin: [adb, fastboot]
+    homepage: https://developer.android.com/tools/releases/platform-tools
+
+  - name: scrcpy
+    category: device
+    description: "Display and control an Android device from the desktop"
+    core: true
+    optional: false
+    platforms: [windows]
+    install: archive
+    source:
+      type: github
+      repo: Genymobile/scrcpy
+      asset_pattern: "scrcpy-win64-.*\\.zip$"
+    bin: [scrcpy]
+    homepage: https://github.com/Genymobile/scrcpy
+
+  # ========================================================================
+  # Reverse engineering / static analysis
+  # ========================================================================
+  - name: apktool
+    category: static
+    description: "Decode/rebuild APK resources and smali"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: jar
+    source:
+      type: github
+      repo: iBotPeaches/Apktool
+      asset_pattern: "apktool_.*\\.jar$"
+    entry: apktool.jar
+    bin: [apktool]
+    homepage: https://apktool.org
+
+  - name: jadx
+    category: static
+    description: "Dex→Java decompiler, includes jadx and jadx-gui"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: archive
+    source:
+      type: github
+      repo: skylot/jadx
+      asset_pattern: "jadx-[0-9].*\\.zip$"
+    bin: [jadx, jadx-gui]
+    homepage: https://github.com/skylot/jadx
+
+  - name: dex2jar
+    category: static
+    description: "Convert .dex/.apk to .jar for Java-tool analysis"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: archive
+    source:
+      type: github
+      repo: pxb1988/dex2jar
+      asset_pattern: "dex-tools-.*\\.zip$"
+    bin: [d2j-dex2jar]
+    homepage: https://github.com/pxb1988/dex2jar
+
+  - name: smali
+    category: static
+    description: "smali/baksmali — assembler/disassembler for the dex format"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: jar
+    source:
+      type: github
+      repo: google/smali
+      asset_pattern: "baksmali-.*-fat-release\\.jar$"
+    entry: baksmali.jar
+    bin: [baksmali, smali]
+    homepage: https://github.com/google/smali
+
+  - name: jd-gui
+    category: static
+    description: "Standalone Java decompiler GUI"
+    core: true
+    optional: false
+    platforms: [windows]
+    install: archive
+    source:
+      type: github
+      repo: java-decompiler/jd-gui
+      asset_pattern: "jd-gui-windows-.*\\.zip$"
+    bin: [jd-gui]
+    homepage: https://github.com/java-decompiler/jd-gui
+
+  - name: apkleaks
+    category: static
+    description: "Scan an APK for URIs, endpoints, and secrets"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: pip
+    source:
+      type: pypi
+      package: apkleaks
+    entry: apkleaks
+    bin: [apkleaks]
+    homepage: https://github.com/dwisiswant0/apkleaks
+
+  # ========================================================================
+  # APK build / signing / handling
+  # ========================================================================
+  - name: build-tools
+    category: signing
+    description: "Android build-tools — apksigner, zipalign, aapt2"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: archive
+    source:
+      type: google
+      google_product: build-tools
+    bin: [apksigner, zipalign, aapt2]
+    homepage: https://developer.android.com/tools/releases/build-tools
+
+  - name: uber-apk-signer
+    category: signing
+    description: "One-command APK (re)signing with debug or custom keys"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: jar
+    source:
+      type: github
+      repo: patrickfav/uber-apk-signer
+      asset_pattern: "uber-apk-signer-.*\\.jar$"
+    entry: uber-apk-signer.jar
+    bin: [uber-apk-signer]
+    homepage: https://github.com/patrickfav/uber-apk-signer
+
+  - name: bundletool
+    category: signing
+    description: "Build/inspect .aab and generate split-APK sets"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: jar
+    source:
+      type: github
+      repo: google/bundletool
+      asset_pattern: "bundletool-all-.*\\.jar$"
+    entry: bundletool.jar
+    bin: [bundletool]
+    homepage: https://github.com/google/bundletool
+
+  # ========================================================================
+  # Dynamic / instrumentation
+  # ========================================================================
+  - name: frida-tools
+    category: dynamic
+    description: "Frida CLI tools (frida, frida-ps, frida-trace) + Frida core"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: pip
+    source:
+      type: pypi
+      package: frida-tools
+    bin: [frida, frida-ps, frida-trace, frida-ls-devices]
+    entry: frida
+    homepage: https://frida.re
+
+  - name: objection
+    category: dynamic
+    description: "Runtime mobile exploration toolkit built on Frida"
+    core: true
+    optional: false
+    platforms: [windows, macos, linux]
+    install: pip
+    source:
+      type: pypi
+      package: objection
+    bin: [objection]
+    entry: objection
+    homepage: https://github.com/sensepost/objection
+
+  # ========================================================================
+  # Interception
+  # ========================================================================
+  - name: mitmproxy
+    category: interception
+    description: "Interactive HTTPS intercepting proxy (mitmproxy/mitmweb/mitmdump)"
+    core: true
+    optional: false
+    platforms: [windows]
+    install: archive
+    source:
+      type: github
+      repo: mitmproxy/mitmproxy
+      # Binaries are hosted on mitmproxy's CDN; the GitHub tag gives the version.
+      url_template: "https://downloads.mitmproxy.org/{version}/mitmproxy-{version}-windows-x86_64.zip"
+    bin: [mitmproxy, mitmweb, mitmdump]
+    homepage: https://mitmproxy.org
+
+  # ========================================================================
+  # ON-DEMAND tools (not in the ZIP; `install <name>` fetches latest)
+  # ========================================================================
+  - name: mobsf
+    category: allinone
+    description: "Mobile Security Framework — automated static+dynamic analysis"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: script
+    source:
+      type: github
+      repo: MobSF/Mobile-Security-Framework-MobSF
+      docker_image: opensecurity/mobile-security-framework-mobsf
+    homepage: https://mobsf.github.io/docs/
+
+  - name: drozer
+    category: dynamic
+    description: "Android attack-surface assessment (WithSecure Python-3 fork)"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: pip
+    source:
+      type: pypi
+      package: drozer
+    bin: [drozer]
+    entry: drozer
+    homepage: https://github.com/WithSecureLabs/drozer
+
+  - name: ghidra
+    category: static
+    description: "NSA software reverse-engineering suite (native .so analysis)"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: archive
+    source:
+      type: github
+      repo: NationalSecurityAgency/ghidra
+      asset_pattern: "ghidra_.*_PUBLIC_.*\\.zip$"
+    bin: [ghidraRun]
+    homepage: https://ghidra-sre.org
+
+  - name: zap
+    category: interception
+    description: "OWASP ZAP web/app security scanner"
+    core: false
+    optional: true
+    platforms: [windows]
+    install: archive
+    source:
+      type: github
+      repo: zaproxy/zaproxy
+      asset_pattern: "ZAP_.*_windows\\.zip$|ZAP_.*_Crossplatform\\.zip$"
+    bin: [zap]
+    homepage: https://www.zaproxy.org
+
+  - name: nmap
+    category: network
+    description: "Network discovery and port scanning"
+    core: false
+    optional: true
+    platforms: [windows]
+    install: archive
+    source:
+      type: url
+      url: "https://nmap.org/dist/nmap-7.95-win32.zip"
+    bin: [nmap]
+    homepage: https://nmap.org
+
+  - name: tcpdump
+    category: network
+    description: "Packet capture binary (push-to-device capture helper)"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: binary
+    source:
+      type: url
+      url: "https://www.androidtcpdump.com/download/4.99.4/tcpdump"
+    bin: [tcpdump]
+    homepage: https://www.androidtcpdump.com
+
+  - name: quark
+    category: static
+    description: "quark-engine — behavior-based APK risk scoring"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: pip
+    source:
+      type: pypi
+      package: quark-engine
+    bin: [quark]
+    entry: quark
+    homepage: https://github.com/quark-engine/quark-engine
+
+  - name: apkid
+    category: static
+    description: "Identify packers, obfuscators, and compilers in an APK"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: pip
+    source:
+      type: pypi
+      package: apkid
+    bin: [apkid]
+    entry: apkid
+    homepage: https://github.com/rednaga/APKiD
+
+  - name: enjarify
+    category: static
+    description: "dex→jar translator (dex2jar alternative, handles tricky dex)"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: archive
+    source:
+      type: github
+      repo: google/enjarify
+      asset_pattern: ".*\\.zip$"
+    bin: [enjarify]
+    homepage: https://github.com/google/enjarify
+
+  - name: apkeep
+    category: acquisition
+    description: "Download APKs from the Play Store / APKPure / F-Droid"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: binary
+    source:
+      type: github
+      repo: EFForg/apkeep
+      asset_pattern: "apkeep-x86_64-pc-windows-msvc\\.exe$"
+    bin: [apkeep]
+    homepage: https://github.com/EFForg/apkeep
+
+  - name: apkurlgrep
+    category: static
+    description: "Extract endpoints/URLs from an APK"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: npm
+    source:
+      type: npm
+      package: apkurlgrep
+    bin: [apkurlgrep]
+    homepage: https://github.com/ndelphit/apkurlgrep
+
+  - name: trufflehog
+    category: static
+    description: "Deep secret scanning (keys, tokens, credentials)"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: archive
+    source:
+      type: github
+      repo: trufflesecurity/trufflehog
+      asset_pattern: "trufflehog_.*_windows_amd64\\.tar\\.gz$"
+    bin: [trufflehog]
+    homepage: https://github.com/trufflesecurity/trufflehog
+
+  - name: apk-mitm
+    category: interception
+    description: "Automatically patch an APK to trust user CAs / drop pinning"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: npm
+    source:
+      type: npm
+      package: apk-mitm
+    bin: [apk-mitm]
+    homepage: https://github.com/shroudedcode/apk-mitm
+
+  - name: rms
+    category: dynamic
+    description: "Runtime Mobile Security — Frida-based runtime analysis web UI"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: npm
+    source:
+      type: npm
+      package: rms-runtime-mobile-security
+    bin: [rms]
+    homepage: https://github.com/m0bilesecurity/RMS-Runtime-Mobile-Security
+
+  - name: house
+    category: dynamic
+    description: "Frida-based runtime mobile analysis framework (NCC Group)"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: pip
+    source:
+      type: pypi
+      package: house
+    bin: [house]
+    entry: house
+    homepage: https://github.com/nccgroup/house
+
+  - name: medusa
+    category: dynamic
+    description: "Frida-based instrumentation framework (modular hooks)"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: script
+    source:
+      type: github
+      repo: Ch0pin/medusa
+    entry: medusa.py
+    homepage: https://github.com/Ch0pin/medusa
+
+  - name: fridump
+    category: dynamic
+    description: "Dump process memory via Frida"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: script
+    source:
+      type: github
+      repo: Nightbringer21/fridump
+    entry: fridump.py
+    homepage: https://github.com/Nightbringer21/fridump
+
+  - name: nuclei
+    category: network
+    description: "Template-based scanning for exposed backend endpoints"
+    core: false
+    optional: true
+    platforms: [windows, macos, linux]
+    install: archive
+    source:
+      type: github
+      repo: projectdiscovery/nuclei
+      asset_pattern: "nuclei_.*_windows_amd64\\.zip$"
+    bin: [nuclei]
+    homepage: https://github.com/projectdiscovery/nuclei
