@@ -21,14 +21,22 @@ def test_manifest_loads_tools(man):
 
 
 def test_core_and_ondemand_split(man):
-    core = {t.name for t in man.core()}
-    # spec: these are bundled/offline core tools
+    # Check the `core` flag directly (platform-agnostic): man.core() is filtered
+    # by the host OS, and several core tools are Windows-only in the manifest.
     for expected in ("platform-tools", "jadx", "apktool", "frida-tools", "mitmproxy"):
-        assert expected in core, f"{expected} should be core"
+        t = man.get(expected)
+        assert t is not None and t.core, f"{expected} should be core"
     # spec: these are on-demand (not core)
     for ondemand in ("mobsf", "ghidra", "nmap", "drozer"):
         t = man.get(ondemand)
         assert t is not None and not t.core, f"{ondemand} should be on-demand"
+
+
+def test_core_available_on_windows(man):
+    """On the Windows-first target, the key core tools resolve for the platform."""
+    core_win = {t.name for t in man.core("windows")}
+    for expected in ("platform-tools", "jadx", "apktool", "frida-tools", "mitmproxy"):
+        assert expected in core_win
 
 
 def test_every_tool_wellformed(man):
