@@ -68,7 +68,9 @@ cyberhost (jadx)> run
    cyberhost> run
    ```
 
-Full walkthrough: **[docs/QUICKSTART.md](docs/QUICKSTART.md)**.
+Full walkthrough: **[docs/QUICKSTART.md](docs/QUICKSTART.md)**. For the complete
+reference — every command, every bundled tool with real examples, and the
+end-to-end workflows — see the **[User Manual](docs/MANUAL.md)**.
 
 You can also run one-off commands from a normal terminal (handy for scripting):
 
@@ -103,6 +105,9 @@ CyberHost.bat list core
 | `doctor` | diagnose the environment |
 | `bootstrap` | rebuild tool envs after moving the folder |
 | `version` · `exit` | version · leave |
+
+Each command, with syntax and examples, is documented in the
+**[User Manual → Command reference](docs/MANUAL.md#3-command-reference)**.
 
 ---
 
@@ -139,6 +144,10 @@ CyberHost.bat list core
 
 > **Burp Suite** is **not** bundled (licensing). Use `proxy burp <host:port>
 > [ca.pem]` to point the device at your own Burp and install its CA.
+
+How to drive each tool from the console (with examples) is in the
+**[User Manual → core toolkit](docs/MANUAL.md#4-the-core-toolkit-bundled)** and
+**[on-demand tools](docs/MANUAL.md#5-on-demand-tools-and-how-to-install-them)**.
 
 ---
 
