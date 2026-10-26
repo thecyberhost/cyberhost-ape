@@ -387,7 +387,7 @@ def self_update() -> bool:
 def _self_latest():
     import json
     req = urllib.request.Request(
-        "https://api.github.com/repos/cyberhost/cyberhost-ape/releases/latest",
+        "https://api.github.com/repos/thecyberhost/cyberhost-ape/releases/latest",
         headers={"User-Agent": "CyberHost-APE/0.1", "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310
         return json.loads(r.read().decode())

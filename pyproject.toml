@@ -25,8 +25,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cyberhost/cyberhost-ape"
-Issues = "https://github.com/cyberhost/cyberhost-ape/issues"
+Homepage = "https://github.com/thecyberhost/cyberhost-ape"
+Issues = "https://github.com/thecyberhost/cyberhost-ape/issues"
 
 [project.scripts]
 cyberhost = "cyberhost.__main__:main"
