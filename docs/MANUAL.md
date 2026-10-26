@@ -777,5 +777,4 @@ gone, nothing left behind on your system.
 ---
 
 *CyberHost APE · by TCH · authorized / educational use only.*
-*Inspired by Appie (Dinesh Shetty). Every bundled tool is the work of its own
-authors.*
+*Every bundled tool is the work of its own authors.*

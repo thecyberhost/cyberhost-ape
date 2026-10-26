@@ -1,8 +1,8 @@
 """CyberHost APE — Android Pentesting Environment.
 
 A portable, self-updating, fully pre-installed Android penetration-testing
-toolkit. Spiritual successor to "Appie", modernized: no VM, cross-platform,
-always-latest tool versions resolved at build and update time.
+toolkit: no VM, cross-platform, always-latest tool versions resolved at build
+and update time.
 
 Authorized / educational use only.
 """

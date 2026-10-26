@@ -33,7 +33,6 @@ See the README and `docs/QUICKSTART.md`.
 
 ## Credits
 
-Inspired by **Appie** (Dinesh Shetty). Each bundled tool is the work of its
-authors.
+Each bundled tool is the work of its own authors.
 
 > Authorized / educational use only.

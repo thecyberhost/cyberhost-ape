@@ -25,11 +25,9 @@ testing — think `msfconsole` / `recon-ng`, but for mobile. You get a branded
 `cyberhost>` prompt with tab-completion, inline help, and every everyday tool
 already wired up and ready.
 
-It is the spiritual successor to the classic **[Appie](https://github.com/dineshshetty/Android-Application-Penetration-Testing)**
-(Android Pentesting Portable Integrated Environment) by Dinesh Shetty — the same
-"everything in one portable folder" idea, brought up to date: current tool
-versions, a self-update engine, no virtual machine, and a real interactive
-shell.
+It takes the "everything in one portable folder" idea and brings it fully up to
+date: current tool versions, a self-update engine, no virtual machine, and a
+real interactive shell.
 
 ```
 cyberhost> use jadx
@@ -238,8 +236,6 @@ toolkit. Bundled third-party tools remain under their own licenses.
 
 ## Credits
 
-- **Appie** by Dinesh Shetty — the original portable Android pentest kit and the
-  inspiration for this project.
 - Every bundled tool is the work of its respective authors and community.
 
 ## Contributing
