@@ -9,7 +9,7 @@ description = "CyberHost APE — a portable, self-updating Android pentesting fr
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
-authors = [{ name = "Cyberlust" }]
+authors = [{ name = "TCH" }]
 keywords = ["android", "pentesting", "security", "frida", "apk", "mobile", "education"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -25,8 +25,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cyberlust/cyberhost-ape"
-Issues = "https://github.com/cyberlust/cyberhost-ape/issues"
+Homepage = "https://github.com/cyberhost/cyberhost-ape"
+Issues = "https://github.com/cyberhost/cyberhost-ape/issues"
 
 [project.scripts]
 cyberhost = "cyberhost.__main__:main"

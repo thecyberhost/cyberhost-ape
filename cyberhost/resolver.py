@@ -18,7 +18,7 @@ from typing import Any
 from .platform_utils import current_arch, current_os
 from .registry import Tool
 
-_UA = {"User-Agent": "CyberHost-APE/0.1 (+https://github.com/cyberlust/cyberhost-ape)"}
+_UA = {"User-Agent": "CyberHost-APE/0.1 (+https://github.com/cyberhost/cyberhost-ape)"}
 _TIMEOUT = 30
 
 # Google serves an always-latest convenience archive for platform-tools.

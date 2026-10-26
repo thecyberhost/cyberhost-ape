@@ -12,7 +12,7 @@
 **CyberHost APE** — an interactive, portable, self-updating Android
 penetration-testing framework console. Unzip and run. No VM, no installs.
 
-*by Cyberlust · authorized / educational use only*
+*by TCH · authorized / educational use only*
 
 </div>
 
