@@ -8,13 +8,11 @@ two UXs can never drift apart.
 
 from __future__ import annotations
 
-from . import __version__
+from . import __version__, frida_helper, proxy, root, runner, updater
 from . import cert as cert_mod
 from . import doctor as doctor_mod
 from . import emulator as emu
-from . import frida_helper, proxy, root, runner
 from . import targets as targets_mod
-from . import updater
 from .banner import console, err, info, ok, step, warn
 from .context import Session
 from .device import list_devices

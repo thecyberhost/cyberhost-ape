@@ -46,3 +46,14 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
+# Explicit rule set so local and CI are identical regardless of ruff's
+# evolving defaults: pyflakes + core pycodestyle + import sorting + pyupgrade.
+# We intentionally do not enable opinionated security/blind-except/sorting
+# lints (S/BLE/RUF0xx) that would flag deliberate graceful-degradation code.
+select = ["E4", "E7", "E9", "F", "W", "I", "UP"]
+ignore = ["E722"]  # bare except is used intentionally in a few guards
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]

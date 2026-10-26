@@ -49,7 +49,7 @@ class Tool:
         return self.home / ".cyberhost_installed.json"
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "Tool":
+    def from_dict(cls, d: dict[str, Any]) -> Tool:
         known = {f for f in cls.__dataclass_fields__}  # type: ignore[attr-defined]
         return cls(**{k: v for k, v in d.items() if k in known})
 
@@ -64,7 +64,7 @@ class Manifest:
 
     # -- construction -----------------------------------------------------
     @classmethod
-    def load(cls, path: Path | None = None) -> "Manifest":
+    def load(cls, path: Path | None = None) -> Manifest:
         p = path or data_file("tools.yaml")
         data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
         tools = [Tool.from_dict(t) for t in data.get("tools", [])]

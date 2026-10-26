@@ -17,8 +17,13 @@ from pathlib import Path
 
 from .banner import err, info, ok, step, warn
 from .device import adb, getprop, list_devices
-from .platform_utils import (android_abi_to_frida_arch, find_bundled, scripts_dir,
-                             subprocess_env, tool_home)
+from .platform_utils import (
+    android_abi_to_frida_arch,
+    find_bundled,
+    scripts_dir,
+    subprocess_env,
+    tool_home,
+)
 
 _FRIDA_RELEASES = "https://api.github.com/repos/frida/frida/releases/latest"
 _UA = {"User-Agent": "CyberHost-APE/0.1", "Accept": "application/json"}

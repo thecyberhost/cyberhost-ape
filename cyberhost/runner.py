@@ -16,8 +16,15 @@ import subprocess
 from pathlib import Path
 
 from .banner import err, info
-from .platform_utils import (exe, find_bundled, is_windows, java_bin,
-                             python_bin, subprocess_env, tool_home)
+from .platform_utils import (
+    exe,
+    find_bundled,
+    is_windows,
+    java_bin,
+    python_bin,
+    subprocess_env,
+    tool_home,
+)
 from .registry import Lockfile, Tool
 
 

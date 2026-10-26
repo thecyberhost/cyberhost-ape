@@ -6,8 +6,14 @@ from pathlib import Path
 import pytest
 
 from cyberhost import updater
-from cyberhost.updater import (InstallError, _atomic_replace, _extract,
-                               _read_sdk_revision, is_archive, sha256_file)
+from cyberhost.updater import (
+    InstallError,
+    _atomic_replace,
+    _extract,
+    _read_sdk_revision,
+    is_archive,
+    sha256_file,
+)
 
 
 def test_sha256_file(tmp_path):

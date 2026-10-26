@@ -11,7 +11,7 @@ import shutil
 import subprocess
 
 from .banner import console, err, info, ok, warn
-from .platform_utils import (bundled_jdk, bundled_python, java_bin, subprocess_env, tools_dir)
+from .platform_utils import bundled_jdk, bundled_python, java_bin, subprocess_env, tools_dir
 from .registry import Lockfile, Manifest
 
 

@@ -155,6 +155,7 @@ def _install_cyberhost_deps(stage: Path) -> None:
     can't import its own deps would not boot, so we never ship one silently.
     """
     import subprocess
+
     from cyberhost.platform_utils import bundled_python
     bp = bundled_python()
     if not bp:
