@@ -31,6 +31,7 @@ class Resolved:
     version: str
     url: str
     sha256: str = ""
+    sha1: str = ""
     source: str = ""
     resolved_online: bool = True
 
@@ -114,19 +115,63 @@ def _resolve_google(tool: Tool) -> Resolved:
 
 
 def _resolve_google_build_tools(tool: Tool) -> Resolved:
-    """Parse Google's repository XML for the newest build-tools revision."""
+    """Parse Google's repository XML for the newest build-tools revision.
+
+    The real archive filename + SHA1 live in the XML per host-os, so we read
+    them instead of guessing (the historical ``build-tools_rNN-os.zip`` scheme
+    no longer matches current releases).
+    """
     xml = _get_text(_GOOGLE_REPO_XML)
-    # revisions look like <major>.<minor>.<micro>; pick the highest.
     revs = sorted(
-        {m for m in re.findall(r"build-tools;(\d+\.\d+\.\d+)", xml)},
+        set(re.findall(r"build-tools;(\d+\.\d+\.\d+)", xml)),
         key=lambda s: tuple(int(x) for x in s.split(".")),
     )
     if not revs:
         raise ResolutionError("could not find build-tools revisions in repo XML")
     latest = revs[-1]
+    # Isolate this revision's <remotePackage> block, then its per-OS archive.
+    start = xml.find(f'path="build-tools;{latest}"')
+    block = xml[start:xml.find("</remotePackage>", start)]
     goos = {"windows": "windows", "macos": "macosx", "linux": "linux"}[current_os()]
-    url = f"https://dl.google.com/android/repository/build-tools_r{latest}-{goos}.zip"
-    return Resolved(version=latest, url=url, source="google")
+    url = sha1 = ""
+    for archive in re.findall(r"<archive>.*?</archive>", block, re.S):
+        if f"<host-os>{goos}</host-os>" in archive:
+            u = re.search(r"<url>(.*?)</url>", archive)
+            s = re.search(r'<checksum type="sha1">(.*?)</checksum>', archive)
+            if u:
+                url = "https://dl.google.com/android/repository/" + u.group(1)
+                sha1 = s.group(1) if s else ""
+            break
+    if not url:
+        raise ResolutionError(f"no build-tools archive for host-os {goos}")
+    return Resolved(version=latest, url=url, sha1=sha1, source="google")
+
+
+def _resolve_maven(tool: Tool) -> Resolved:
+    """Resolve a Maven-hosted tool from the repository's own metadata.
+
+    The binary host is the source of truth for what's actually available (a
+    GitHub tag may exist with no published artifact), so we read the primary
+    artifact's maven-metadata.xml and take its <release> version. Used for tools
+    (e.g. smali/baksmali) distributed only as Maven artifacts with no fat jar;
+    the installer fetches the dependency jars too.
+    """
+    src = tool.source
+    base = src.get("base", "https://repo1.maven.org/maven2").rstrip("/")
+    primary = src.get("artifacts", [""])[0]  # group:artifact
+    group, _, artifact = primary.partition(":")
+    gpath = group.replace(".", "/")
+    meta = _get_text(f"{base}/{gpath}/{artifact}/maven-metadata.xml")
+    m = re.search(r"<release>(.*?)</release>", meta) or re.search(r"<latest>(.*?)</latest>", meta)
+    if not m:
+        vers = re.findall(r"<version>(.*?)</version>", meta)
+        if not vers:
+            raise ResolutionError(f"{tool.name}: no versions in maven-metadata")
+        version = vers[-1]
+    else:
+        version = m.group(1)
+    url = f"{base}/{gpath}/{artifact}/{version}/{artifact}-{version}.jar"
+    return Resolved(version=version, url=url, source="maven")
 
 
 def _resolve_npm(tool: Tool) -> Resolved:
@@ -149,6 +194,7 @@ _RESOLVERS = {
     "pypi": _resolve_pypi,
     "npm": _resolve_npm,
     "google": _resolve_google,
+    "maven": _resolve_maven,
     "url": _resolve_static,
 }
 

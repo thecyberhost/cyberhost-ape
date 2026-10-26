@@ -4,8 +4,9 @@ import pytest
 
 from cyberhost.registry import Lockfile, Manifest, Tool
 
-VALID_INSTALL = {"archive", "github_release", "jar", "pip", "npm", "script", "docker", "google", "binary"}
-VALID_SOURCE = {"github", "google", "pypi", "npm", "url"}
+VALID_INSTALL = {"archive", "github_release", "jar", "pip", "npm", "script",
+                 "docker", "google", "binary", "maven"}
+VALID_SOURCE = {"github", "google", "pypi", "npm", "url", "maven"}
 
 
 @pytest.fixture(scope="module")

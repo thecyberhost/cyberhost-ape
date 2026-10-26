@@ -1,6 +1,5 @@
 """Update-engine internals: checksums, safe extraction, atomic swap, revisions."""
 
-import io
 import zipfile
 from pathlib import Path
 
@@ -73,6 +72,21 @@ def test_atomic_replace_preserves_then_swaps(tmp_path):
     assert not (final / "old.txt").exists()
     assert not staged.exists()
     assert not final.with_name("tool.old").exists()
+
+
+def test_verify_sha256_and_sha1(tmp_path):
+    from cyberhost.resolver import Resolved
+    from cyberhost.updater import _verify
+    f = tmp_path / "a.bin"
+    f.write_bytes(b"hello")
+    sha256 = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    sha1 = "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d"
+    _verify(f, Resolved(version="1", url="u", sha256=sha256))  # ok
+    _verify(f, Resolved(version="1", url="u", sha1=sha1))      # ok
+    with pytest.raises(InstallError):
+        _verify(f, Resolved(version="1", url="u", sha256="00"))
+    with pytest.raises(InstallError):
+        _verify(f, Resolved(version="1", url="u", sha1="00"))
 
 
 def test_read_sdk_revision(tmp_path):

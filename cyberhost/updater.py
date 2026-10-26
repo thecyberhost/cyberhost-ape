@@ -33,12 +33,27 @@ class InstallError(RuntimeError):
 # Pure helpers (unit-tested without the network)
 # ---------------------------------------------------------------------------
 
-def sha256_file(path: Path, chunk: int = 1 << 20) -> str:
-    h = hashlib.sha256()
+def _hash_file(path: Path, algo: str, chunk: int = 1 << 20) -> str:
+    h = hashlib.new(algo)
     with open(path, "rb") as f:
         for block in iter(lambda: f.read(chunk), b""):
             h.update(block)
     return h.hexdigest()
+
+
+def sha256_file(path: Path, chunk: int = 1 << 20) -> str:
+    return _hash_file(path, "sha256", chunk)
+
+
+def _verify(archive: Path, res) -> None:
+    """Verify whichever checksum the resolver supplied (sha256 or sha1)."""
+    for algo in ("sha256", "sha1"):
+        expected = getattr(res, algo, "")
+        if expected:
+            actual = _hash_file(archive, algo)
+            if actual.lower() != expected.lower():
+                raise InstallError(
+                    f"checksum mismatch ({algo}): expected {expected}, got {actual}")
 
 
 def is_archive(url: str) -> bool:
@@ -131,11 +146,7 @@ def _atomic_replace(staged: Path, final: Path) -> None:
 
 def _install_archive(tool: Tool, res: Resolved, tmp: Path) -> None:
     archive = download(res.url, tmp / Path(res.url.split("?", 1)[0]).name)
-    if res.sha256:
-        actual = sha256_file(archive)
-        if actual.lower() != res.sha256.lower():
-            raise InstallError(f"{tool.name}: checksum mismatch "
-                               f"(expected {res.sha256}, got {actual})")
+    _verify(archive, res)
     staged = tmp / "staged"
     _extract(archive, staged)
     _atomic_replace(staged, tool_home(tool.name))
@@ -193,6 +204,76 @@ def _install_binary(tool: Tool, res: Resolved, tmp: Path) -> None:
     _atomic_replace(staged, tool_home(tool.name))
 
 
+def _maven_urls(group: str, artifact: str, version: str, bases: list[str], ext: str):
+    gpath = group.replace(".", "/")
+    name = f"{artifact}-{version}.{ext}"
+    return [(f"{b}/{gpath}/{artifact}/{version}/{name}", name) for b in bases]
+
+
+def _maven_fetch(group: str, artifact: str, version: str, bases: list[str],
+                 ext: str, dest: Path) -> Path | None:
+    """Download an artifact's jar/pom, trying each repo base in turn."""
+    for url, name in _maven_urls(group, artifact, version, bases, ext):
+        try:
+            return download(url, dest / name, quiet=True)
+        except Exception:
+            continue
+    return None
+
+
+def _install_maven(tool: Tool, res: Resolved, tmp: Path) -> None:
+    """Install a Maven-hosted tool as a classpath bundle (jars + their deps).
+
+    For tools with no runnable fat jar (e.g. smali/baksmali): download the
+    listed artifacts at the resolved version, then read each one's POM and fetch
+    its compile/runtime dependencies (correct versions, no hardcoding) so the
+    runner can launch a main class with the full classpath.
+    """
+    import re
+    src = tool.source
+    bases = [src.get("base", "https://repo1.maven.org/maven2").rstrip("/"),
+             "https://repo1.maven.org/maven2"]
+    staged = tmp / "staged"
+    staged.mkdir(parents=True, exist_ok=True)
+
+    own = {c.split(":")[1] for c in src.get("artifacts", [])}
+    seen: set[tuple] = set()
+    deps: list[tuple] = []
+
+    # 1. primary artifacts + collect their POM dependencies
+    for coord in src.get("artifacts", []):
+        group, artifact = coord.split(":")
+        _maven_fetch(group, artifact, res.version, bases, "jar", staged)
+        pom = _maven_fetch(group, artifact, res.version, bases, "pom", tmp)
+        if not pom:
+            continue
+        text = pom.read_text(encoding="utf-8", errors="replace")
+        for block in re.findall(r"<dependency>(.*?)</dependency>", text, re.S):
+            g = re.search(r"<groupId>(.*?)</groupId>", block)
+            a = re.search(r"<artifactId>(.*?)</artifactId>", block)
+            v = re.search(r"<version>(.*?)</version>", block)
+            scope = re.search(r"<scope>(.*?)</scope>", block)
+            if not (g and a and v):
+                continue
+            if scope and scope.group(1) in ("test", "provided", "system"):
+                continue
+            if a.group(1) in own or "${" in v.group(1):
+                continue  # siblings handled; skip unresolved property versions
+            key = (g.group(1), a.group(1), v.group(1))
+            if key not in seen:
+                seen.add(key)
+                deps.append(key)
+
+    # 2. fetch external dependency jars at the versions their POMs declared
+    for group, artifact, version in deps:
+        _maven_fetch(group, artifact, version, bases, "jar", staged)
+
+    # drop stray .pom files; keep only jars
+    for p in staged.glob("*.pom"):
+        p.unlink(missing_ok=True)
+    _atomic_replace(staged, tool_home(tool.name))
+
+
 def _install_docker(tool: Tool, res: Resolved, tmp: Path) -> None:
     image = tool.source.get("image", tool.name)
     docker = shutil.which("docker")
@@ -210,6 +291,7 @@ _INSTALLERS = {
     "jar": _install_jar,
     "pip": _install_pip,
     "binary": _install_binary,
+    "maven": _install_maven,
     "docker": _install_docker,
 }
 

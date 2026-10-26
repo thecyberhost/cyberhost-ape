@@ -70,6 +70,24 @@ def build_command(tool: Tool, args: list[str]) -> list[str]:
             raise RunError("no Java runtime (bundled JDK missing and none on PATH)")
         return [jb, "-jar", str(jar), *args]
 
+    if method == "maven":
+        jb = java_bin()
+        if not jb:
+            raise RunError("no Java runtime (bundled JDK missing and none on PATH)")
+        home = tool_home(tool.name)
+        if not list(home.glob("*.jar")):
+            raise RunError(f"{tool.name}: jars not found — run `install {tool.name}`")
+        # Pick the main class for the requested bin (first bin when run bare).
+        which = tool.bin[0] if tool.bin else tool.name
+        if args and args[0] in tool.launch:
+            which, args = args[0], args[1:]
+        main = tool.launch.get(which)
+        if not main:
+            raise RunError(f"{tool.name}: no main class configured for {which!r}")
+        sep = ";" if is_windows() else ":"
+        classpath = sep.join(str(p) for p in sorted(home.glob("*.jar")))
+        return [jb, "-cp", classpath, main, *args]
+
     if method == "pip":
         script = _venv_script(tool)
         if script:

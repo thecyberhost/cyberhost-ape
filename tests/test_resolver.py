@@ -4,7 +4,7 @@ import pytest
 
 from cyberhost import resolver
 from cyberhost.registry import Tool
-from cyberhost.resolver import ResolutionError, Resolved, resolve
+from cyberhost.resolver import ResolutionError, resolve
 
 
 def test_subst_tokens():
@@ -80,6 +80,45 @@ def test_offline_fallback(monkeypatch):
     r = resolve(t, offline_ok=True)
     assert r.resolved_online is False
     assert r.version == "9.9.9"
+
+
+def test_maven_reads_release_from_metadata(monkeypatch):
+    meta = ("<metadata><versioning><release>3.0.10</release>"
+            "<latest>3.0.10</latest></versioning></metadata>")
+    monkeypatch.setattr(resolver, "_get_text", lambda url: meta)
+    t = Tool(name="smali", install="maven", source={
+        "type": "maven", "base": "https://dl.google.com/android/maven2",
+        "artifacts": ["com.android.tools.smali:smali-baksmali"]})
+    r = resolve(t)
+    assert r.version == "3.0.10"
+    assert r.url.endswith("smali-baksmali/3.0.10/smali-baksmali-3.0.10.jar")
+
+
+def test_build_tools_parses_url_and_sha1(monkeypatch):
+    xml = """
+    <remotePackage path="build-tools;37.0.0">
+      <archives>
+        <archive>
+          <complete>
+            <checksum type="sha1">deadbeef</checksum>
+            <url>build-tools_r37_windows.zip</url>
+          </complete>
+          <host-os>windows</host-os>
+        </archive>
+        <archive>
+          <complete><url>build-tools_r37_linux.zip</url></complete>
+          <host-os>linux</host-os>
+        </archive>
+      </archives>
+    </remotePackage>"""
+    monkeypatch.setattr(resolver, "_get_text", lambda url: xml)
+    monkeypatch.setattr(resolver, "current_os", lambda: "windows")
+    t = Tool(name="build-tools", install="archive",
+             source={"type": "google", "google_product": "build-tools"})
+    r = resolve(t)
+    assert r.version == "37.0.0"
+    assert r.url.endswith("build-tools_r37_windows.zip")
+    assert r.sha1 == "deadbeef"
 
 
 def test_unknown_source_type():

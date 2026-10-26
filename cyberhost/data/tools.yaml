@@ -141,13 +141,21 @@ tools:
     core: true
     optional: false
     platforms: [windows, macos, linux]
-    install: jar
+    # google/smali ships no runnable fat jar; it publishes Maven artifacts on
+    # Google Maven. We fetch the jars + their deps and run via classpath.
+    install: maven
     source:
-      type: github
-      repo: google/smali
-      asset_pattern: "baksmali-.*-fat-release\\.jar$"
-    entry: baksmali.jar
+      type: maven
+      base: https://dl.google.com/android/maven2
+      artifacts:
+        - com.android.tools.smali:smali-baksmali
+        - com.android.tools.smali:smali
+        - com.android.tools.smali:smali-dexlib2
+        - com.android.tools.smali:smali-util
     bin: [baksmali, smali]
+    launch:
+      baksmali: com.android.tools.smali.baksmali.Main
+      smali: com.android.tools.smali.smali.Main
     homepage: https://github.com/google/smali
 
   - name: jd-gui

@@ -149,16 +149,28 @@ def _normalize_runtime(stage: Path, name: str) -> None:
 
 
 def _install_cyberhost_deps(stage: Path) -> None:
-    """Install CyberHost's own deps into the bundled python so it can run."""
+    """Install CyberHost's own deps into the bundled python so it can run.
+
+    Verifies the imports afterward and raises on failure — a packaged build that
+    can't import its own deps would not boot, so we never ship one silently.
+    """
     import subprocess
     from cyberhost.platform_utils import bundled_python
     bp = bundled_python()
     if not bp:
-        log("  !! bundled python not found; skipping dep install")
-        return
+        raise SystemExit("[build] FATAL: bundled python not found; cannot install deps")
     req = HERE / "requirements.txt"
     log("installing CyberHost deps into bundled python")
-    subprocess.run([str(bp), "-m", "pip", "install", "-r", str(req)], check=False)
+    subprocess.run([str(bp), "-m", "ensurepip", "--upgrade"], check=False)
+    subprocess.run([str(bp), "-m", "pip", "install", "--upgrade", "pip"], check=False)
+    r = subprocess.run([str(bp), "-m", "pip", "install", "-r", str(req)])
+    if r.returncode != 0:
+        raise SystemExit("[build] FATAL: failed to install CyberHost deps into bundled python")
+    # Verify the bundled interpreter can actually import them.
+    check = subprocess.run([str(bp), "-c", "import yaml, rich, prompt_toolkit"])
+    if check.returncode != 0:
+        raise SystemExit("[build] FATAL: bundled python cannot import yaml/rich/prompt_toolkit")
+    log("bundled python deps verified (yaml, rich, prompt_toolkit)")
 
 
 def make_zip(stage: Path, version: str, out_dir: Path) -> Path:

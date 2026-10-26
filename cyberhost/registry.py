@@ -31,6 +31,7 @@ class Tool:
     source: dict[str, Any] = field(default_factory=dict)
     bin: list[str] = field(default_factory=list)
     entry: str = ""  # jar filename, python module/script, or console-script name
+    launch: dict[str, Any] = field(default_factory=dict)  # e.g. {bin: main-class} for maven
     version: str = ""  # manifest's build-time snapshot; updater re-resolves latest
     notes: str = ""
     homepage: str = ""
